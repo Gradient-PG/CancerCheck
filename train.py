@@ -49,11 +49,16 @@ unet = Unet(1).to(device)
 optimizer = torch.optim.Adam(unet.parameters(), lr=0.0001, weight_decay=1e-6)
 
 # Train model
-trainer = Trainer(model=unet, num_epochs=10, optimizer=optimizer, criterion=bce_dice_loss, device=device)
+trainer = Trainer(model=unet, num_epochs=100, optimizer=optimizer, criterion=bce_dice_loss, device=device)
 trainer.train(train_dataloader, test_dataloader)
 
 # Save metrics
 metrics = trainer.get_metrics()
-plot_metrics(metrics)
+plt = plot_metrics(metrics)
+
+# Save metrics plot in 'log/' directory
+log_directory = 'log'
+os.makedirs(log_directory, exist_ok=True)
+plt.savefig(f'{log_directory}/metrics_plot.png')
 
 print("Training complete. Best model saved in 'log/' directory.")

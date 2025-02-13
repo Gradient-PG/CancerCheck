@@ -75,7 +75,9 @@ def plot_metrics(metrics):
     plt.legend()
 
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+
+    return plt
 
 def to_numpy(tensor):
     # Move tensor to CPU and convert to NumPy array
