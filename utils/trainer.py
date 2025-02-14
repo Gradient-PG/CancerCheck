@@ -1,4 +1,5 @@
 import glob
+import re
 
 import torch
 import os
@@ -31,21 +32,26 @@ class Trainer:
 
     def save_best_model(self, epoch, dice):
         if dice > self.best_dice:
-            self.best_dice = dice
-            self.best_epoch = epoch
-            self.best_model = self.model.state_dict()
-
             log_directory = 'log'
-            os.makedirs(log_directory, exist_ok=True)
-
-            # Remove previous best model
             previous_model = glob.glob(f'{log_directory}/best_model_dice_*.pth')
-            for model in previous_model:
-                os.remove(model)
+            model_deleted = False  # Track if a model was deleted
 
-            # Specify the file path for saving the model
-            filename = f'{log_directory}/best_model_dice_{dice:.4f}.pth'
-            torch.save(self.best_model, filename)
+            for model in previous_model:
+                match = re.search(r'best_model_dice_([\d.]+)\.pth', model)
+                if match:
+                    prev_dice = float(match.group(1))
+                    if prev_dice < dice:  # Delete only if the previous model has a worse Dice score
+                        os.remove(model)
+                        model_deleted = True
+
+            # Save only if a previous model was deleted
+            if model_deleted:
+                self.best_dice = dice
+                self.best_epoch = epoch
+                self.best_model = self.model.state_dict()
+
+                filename = f'{log_directory}/best_model_dice_{dice:.4f}.pth'
+                torch.save(self.best_model, filename)
 
     def train(self, train_loader, val_loader):
         for epoch in range(self.num_epochs):
@@ -63,7 +69,7 @@ class Trainer:
 
                 outputs = self.model(images)
                 loss = self.criterion(outputs, masks)
-                dice = self.dice_coeff(torch.sigmoid(outputs), masks)
+                dice = self.dice_coeff(outputs, masks)
 
 
                 loss.backward()
